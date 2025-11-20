@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MONAGE - Money Management</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/localbase/dist/localbase.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="custom-modal-backdrop" id="deleteConfirmModal">
+        <div class="custom-modal">
+            <div class="custom-modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Hapus Semua Data?</h3>
+            <p>Tindakan ini permanen. Semua riwayat transaksi, kategori, dan pengaturan akan hilang. Apakah Anda yakin?</p>
+            <div class="custom-modal-actions">
+                <button id="cancelDeleteBtn" class="btn-secondary">Batal</button>
+                <button id="confirmDeleteBtn" class="btn-danger">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="app-content">
+        <button class="settings-btn" id="openSettingsBtn" aria-label="Buka Menu Pengaturan">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <main id="page-dasbor" class="page-content active">
+            <h1>MONAGE</h1>
+            <p class="app-subtitle">Money Management</p>
+
+            <section class="dashboard">
+                <div class="dashboard-card" id="card-saldo">
+                    <h3>Saldo Total</h3>
+                    <p id="saldo-saat-ini">Rp 0</p>
+                </div>
+                <div class="dashboard-card" id="card-pemasukan-harian">
+                    <h3>Masuk (Hari Ini)</h3>
+                    <p id="pemasukan-harian">Rp 0</p>
+                </div>
+                <div class="dashboard-card" id="card-pengeluaran-harian">
+                    <h3>Keluar (Hari Ini)</h3>
+                    <p id="pengeluaran-harian">Rp 0</p>
+                </div>
+                <div class="dashboard-card" id="card-saran">
+                    <h3>Analisis Singkat</h3>
+                    <p id="saran-bulanan">Memuat saran...</p>
+                </div>
+            </section>
+
+            <div class="content-grid-wrapper">
+                
+                <div class="main-column">
+                    <section class="form-container">
+                        <h2>Tambah Transaksi Baru</h2>
+                        <form id="transaksiForm" class="form-grid">
+                            <div class="form-group">
+                                <label for="tgl-transaksi">Tanggal</label>
+                                <input type="date" id="tgl-transaksi" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="jumlah-transaksi">Jumlah (Rp)</label>
+                                <input type="number" id="jumlah-transaksi" placeholder="0" required>
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="ket-transaksi">Keterangan</label>
+                                <input type="text" id="ket-transaksi" placeholder="Contoh: Makan siang, Gaji, dll" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="kat-transaksi">Kategori</label>
+                                <select id="kat-transaksi">
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Tipe Transaksi</label>
+                                <div class="radio-group">
+                                    <label>
+                                        <input type="radio" name="tipe-transaksi" value="pemasukan" checked> 
+                                        <span>Pemasukan</span>
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="tipe-transaksi" value="pengeluaran"> 
+                                        <span>Pengeluaran</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group full-width" style="margin-top: 10px;">
+                                <button type="submit" class="submit-btn"><i class="fas fa-save"></i> Simpan Transaksi</button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="laporan-container">
+                        <h2>Laporan Visual</h2>
+                        <div class="charts-grid">
+                            <div class="chart-wrapper">
+                                <div class="form-group" style="margin-bottom: 15px; text-align: center;">
+                                    <label for="tgl-laporan-harian" style="margin-bottom: 5px; display:block;">Pilih Tanggal:</label>
+                                    <input type="date" id="tgl-laporan-harian" style="max-width: 200px; margin: 0 auto;">
+                                </div>
+                                <h3 id="judul-chart-harian" style="text-align: center; margin-bottom: 15px;">Arus Kas Harian</h3>
+                                <div class="pie-chart-container">
+                                    <canvas id="arusKasHarianPieChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <h3 style="text-align: center; margin-bottom: 15px; margin-top: 10px;">Tren Tahunan</h3>
+                                <div class="line-chart-container">
+                                    <canvas id="arusKasTahunanLineChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="side-column">
+                    <section class="list-container card-style" id="riwayat-transaksi-container">
+                        <div class="list-header">
+                            <h2>Riwayat Transaksi</h2>
+                            <span class="badge-recent">Terbaru</span>
+                        </div>
+                        <ul id="list-transaksi" class="list">
+                        </ul>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+        <nav class="sidebar-menu" id="sidebarMenu">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-wallet"></i> MONAGE</h2>
+                <button class="sidebar-close-btn" id="closeSettingsBtn">&times;</button>
+            </div>
+
+            <div class="sidebar-profile">
+                <div class="profile-avatar" id="sidebar-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h4 class="profile-name" id="sidebar-name">Memuat...</h4>
+            </div>
+
+            <div class="sidebar-body">
+                <ul class="sidebar-nav">
+                    <li class="sidebar-nav-item" data-page="dasbor">
+                        <i class="fas fa-home"></i> Dasbor
+                    </li>
+                    <li class="sidebar-nav-item" data-page="profil">
+                        <i class="fas fa-user-cog"></i> Profil & Data
+                    </li>
+                    <li class="sidebar-nav-item" data-page="kategori">
+                        <i class="fas fa-layer-group"></i> Kategori
+                    </li>
+                    <li class="sidebar-nav-item" data-page="berulang">
+                        <i class="fas fa-sync"></i> Transaksi Rutin
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <section id="page-profil" class="page-content">
+            <div class="page-header">
+                <button class="back-btn" data-page="dasbor" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
+                <h2>Edit Profil</h2>
+            </div>
+            <div class="form-container">
+                <form id="profilForm">
+                    <div class="profil-settings-preview">
+                        <div class="profile-avatar-setting" id="profil-preview">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="foto-profil-input">Foto Profil</label>
+                        <input type="file" id="foto-profil-input" accept="image/png, image/jpeg">
+                    </div>
+                    <div class="form-group">
+                        <label for="nama-profil-input">Nama Tampilan</label>
+                        <input type="text" id="nama-profil-input" placeholder="Nama Anda" required>
+                    </div>
+                    <button type="submit" id="simpan-profil-btn" class="submit-btn">Simpan Perubahan</button>
+                </form>
+                
+                <div class="danger-zone">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Zona Bahaya</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                        Tindakan ini akan menghapus seluruh riwayat transaksi, kategori, dan data profil secara permanen dari database lokal browser ini.
+                    </p>
+                    <button id="hapus-semua-data-btn" class="reset-btn">
+                        <i class="fas fa-trash-alt"></i> Reset Data Aplikasi
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-kategori" class="page-content">
+            <div class="page-header">
+                <button class="back-btn" data-page="dasbor" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
+                <h2>Kategori</h2>
+            </div>
+            <div class="form-container">
+                <form id="kategoriForm" class="form-grid" style="grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end;">
+                    <div class="form-group full-width-mobile">
+                        <label for="nama-kategori">Nama Kategori</label>
+                        <input type="text" id="nama-kategori" placeholder="Contoh: Belanja" required>
+                    </div>
+                    <div class="form-group full-width-mobile">
+                        <label>Jenis</label>
+                        <div class="radio-group" style="margin-top: 0;">
+                            <label>
+                                <input type="radio" name="tipe-kategori-baru" value="pengeluaran" checked> 
+                                <span>Keluar</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="tipe-kategori-baru" value="pemasukan"> 
+                                <span>Masuk</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group full-width-mobile">
+                        <button type="submit" class="submit-btn" style="padding: 14px 20px;"><i class="fas fa-plus"></i></button>
+                    </div>
+                </form>
+                <h4 style="margin-top: 30px; margin-bottom: 15px; color: var(--text-muted);">Daftar Kategori</h4>
+                <ul id="kategori-list" class="list">
+                </ul>
+            </div>
+        </section>
+
+        <section id="page-berulang" class="page-content">
+            <div class="page-header">
+                <button class="back-btn" data-page="dasbor" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
+                <h2>Transaksi Rutin</h2>
+            </div>
+            <div class="form-container">
+                <form id="berulangForm" class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="ket-berulang">Nama Tagihan/Pemasukan</label>
+                        <input type="text" id="ket-berulang" placeholder="Contoh: Bayar Listrik" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="jumlah-berulang">Nominal (Rp)</label>
+                        <input type="number" id="jumlah-berulang" placeholder="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tgl-berulang">Setiap Tanggal (1-31)</label>
+                        <input type="number" id="tgl-berulang" min="1" max="31" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipe-berulang">Tipe</label>
+                        <select id="tipe-berulang">
+                            <option value="pemasukan">Pemasukan</option>
+                            <option value="pengeluaran">Pengeluaran</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="kat-berulang">Kategori</label>
+                        <select id="kat-berulang">
+                        </select>
+                    </div>
+                    <div class="form-group full-width" style="margin-top: 10px;">
+                        <button type="submit" class="submit-btn"><i class="fas fa-clock"></i> Simpan Jadwal</button>
+                    </div>
+                </form>
+                <h4 style="margin-top: 30px; margin-bottom: 15px; color: var(--text-muted);">Jadwal Rutin</h4>
+                <ul id="berulang-list" class="list">
+                </ul>
+            </div>
+        </section>
+
+    </div> 
+
+    <script src="script.js"></script>
+</body>
+</html>
